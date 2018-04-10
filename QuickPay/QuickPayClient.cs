@@ -86,6 +86,11 @@ namespace QuickPay
             return await Post<QuickPayRefund, QuickPayCallback>(model, $"payments/{id}/refund");
         }
 
+        public async Task<QuickPayCallback> CapturePayment(int id, QuickPayCapture model)
+        {
+            return await Post<QuickPayCapture, QuickPayCallback>(model, $"payments/{id}/capture");
+        }
+
         public async Task<QuickPayCallback> CreateSubscription(QuickPayCreatePayment model)
         {
             return await Post<QuickPayCreatePayment, QuickPayCallback>(model, "subscriptions");
@@ -196,6 +201,12 @@ namespace QuickPay
         public int Amount { get; set; }
         [JsonProperty("order_id")]
         public string OrderId { get; set; }
+    }
+
+    public class QuickPayCapture
+    {
+        [JsonProperty("amount")]
+        public int Amount { get; set; }
     }
 
     public class QuickPayCancelSubscription
