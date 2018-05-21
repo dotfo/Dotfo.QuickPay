@@ -123,19 +123,24 @@ namespace QuickPay
 
         private async Task<TK> Get<T, TK>(string url)
         {
+            return await Get<T, TK>(new QuickPayEmpty(), url);
+        }
+
+        private async Task<TK> Get<T, TK>(QuickPayPayload model, string url)
+        {
             var authValue = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($":{_quickPaySettings.ApiKey}")));
             HttpClient client = new HttpClient()
             {
                 DefaultRequestHeaders = { Authorization = authValue }
             };
-            client.DefaultRequestHeaders.Add("Accept-Version", _quickPaySettings.Version);
-            client.DefaultRequestHeaders.Add("QuickPay-Callback-Url", _quickPaySettings.CallbackUrl);
+            client.DefaultRequestHeaders.Add("Accept-Version", model.Headers.ContainsKey("Accept-Version") ? model.Headers["Accept-Version"] : _quickPaySettings.Version);
+            client.DefaultRequestHeaders.Add("QuickPay-Callback-Url", model.Headers.ContainsKey("QuickPay-Callback-Url") ? model.Headers["QuickPay-Callback-Url"] : _quickPaySettings.CallbackUrl);
 
             var response = await client.GetAsync(_quickPaySettings.EndPoint + url);
 
             if (!response.IsSuccessStatusCode)
             {
-                throw new QuickPayException(response.ReasonPhrase, response.StatusCode);
+                throw new QuickPayException(response.ReasonPhrase, response.StatusCode, await response.Content.ReadAsStringAsync());
             }
             var responseValue = await response.Content.ReadAsStringAsync();
 
@@ -143,15 +148,15 @@ namespace QuickPay
             return JsonConvert.DeserializeObject<TK>(responseValue);
         }
 
-        private async Task<TK> Post<T, TK>(T model, string url)
+        private async Task<TK> Post<T, TK>(QuickPayPayload model, string url)
         {
             var authValue = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($":{_quickPaySettings.ApiKey}")));
             HttpClient client = new HttpClient()
             {
                 DefaultRequestHeaders = { Authorization = authValue }
             };
-            client.DefaultRequestHeaders.Add("Accept-Version", _quickPaySettings.Version);
-            client.DefaultRequestHeaders.Add("QuickPay-Callback-Url", _quickPaySettings.CallbackUrl);
+            client.DefaultRequestHeaders.Add("Accept-Version", model.Headers.ContainsKey("Accept-Version") ? model.Headers["Accept-Version"] : _quickPaySettings.Version);
+            client.DefaultRequestHeaders.Add("QuickPay-Callback-Url", model.Headers.ContainsKey("QuickPay-Callback-Url") ? model.Headers["QuickPay-Callback-Url"] : _quickPaySettings.CallbackUrl);
 
             var data = JsonConvert.SerializeObject(model);
 
@@ -162,29 +167,29 @@ namespace QuickPay
 
             if (!response.IsSuccessStatusCode)
             {
-                throw new QuickPayException(response.ReasonPhrase, response.StatusCode, responseValue);
+                throw new QuickPayException(response.ReasonPhrase, response.StatusCode, await response.Content.ReadAsStringAsync());
             }
 
             _logger.LogInformation(responseValue);
             return JsonConvert.DeserializeObject<TK>(responseValue);
         }
 
-        private async Task<TK> Put<T, TK>(T model, string url)
+        private async Task<TK> Put<T, TK>(QuickPayPayload model, string url)
         {
             var authValue = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($":{_quickPaySettings.ApiKey}")));
             HttpClient client = new HttpClient()
             {
                 DefaultRequestHeaders = { Authorization = authValue }
             };
-            client.DefaultRequestHeaders.Add("Accept-Version", _quickPaySettings.Version);
-            client.DefaultRequestHeaders.Add("QuickPay-Callback-Url", _quickPaySettings.CallbackUrl);
+            client.DefaultRequestHeaders.Add("Accept-Version", model.Headers.ContainsKey("Accept-Version") ? model.Headers["Accept-Version"] : _quickPaySettings.Version);
+            client.DefaultRequestHeaders.Add("QuickPay-Callback-Url", model.Headers.ContainsKey("QuickPay-Callback-Url") ? model.Headers["QuickPay-Callback-Url"] : _quickPaySettings.CallbackUrl);
 
             var response = await client.PutAsync(_quickPaySettings.EndPoint + url,
                 new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json"));
 
             if (!response.IsSuccessStatusCode)
             {
-                throw new QuickPayException(response.ReasonPhrase, response.StatusCode);
+                throw new QuickPayException(response.ReasonPhrase, response.StatusCode, await response.Content.ReadAsStringAsync());
             }
             var responseValue = await response.Content.ReadAsStringAsync();
 
@@ -195,7 +200,18 @@ namespace QuickPay
 
     }
 
-    public class QuickPayRefund
+    public abstract class QuickPayPayload
+    {
+        [JsonIgnore]
+        public Dictionary<string, string> Headers { get; set; } = new Dictionary<string, string>();
+    }
+
+    public class QuickPayEmpty : QuickPayPayload
+    {
+
+    }
+
+    public class QuickPayRefund : QuickPayPayload
     {
         [JsonProperty("amount")]
         public int Amount { get; set; }
@@ -203,25 +219,25 @@ namespace QuickPay
         public string OrderId { get; set; }
     }
 
-    public class QuickPayCapture
+    public class QuickPayCapture : QuickPayPayload
     {
         [JsonProperty("amount")]
-        public int Amount { get; set; }
+        public int Amount { get; set; }              
     }
 
-    public class QuickPayCancelSubscription
+    public class QuickPayCancelSubscription : QuickPayPayload
     {
         [JsonProperty("id")]
         public string Id { get; set; }
     }
 
-    public class QuickPayGetSubscription
+    public class QuickPayGetSubscription : QuickPayPayload
     {
         [JsonProperty("id")]
         public string Id { get; set; }
     }
 
-    public class QuickPayCreatePayment
+    public class QuickPayCreatePayment : QuickPayPayload
     {
         [JsonProperty("order_id")]
         public string OrderId { get; set; }
@@ -231,7 +247,7 @@ namespace QuickPay
         public string Description { get; set; }
     }
 
-    public class QuickPayCreateRecurring
+    public class QuickPayCreateRecurring : QuickPayPayload
     {
         [JsonProperty("order_id")]
         public string OrderId { get; set; }
@@ -248,7 +264,7 @@ namespace QuickPay
     }
 
 
-    public class QuickPayCreateLink
+    public class QuickPayCreateLink : QuickPayPayload
     {
         [JsonProperty("callback_url")]
         public string CallbackUrl { get; set; }
@@ -268,7 +284,7 @@ namespace QuickPay
 
     }
 
-    public class QuickPayLink
+    public class QuickPayLink : QuickPayPayload
     {
         [JsonProperty("url")]
         public string Url { get; set; }
@@ -381,7 +397,7 @@ namespace QuickPay
         public bool FraudSuspected { get; set; }
 
         [JsonProperty("fraud_remarks")]
-        public IList<object> FraudRemarks { get; set; }
+        public IList<object> FraudComments { get; set; }
 
         [JsonProperty("nin_number")]
         public object NinNumber { get; set; }
@@ -721,7 +737,7 @@ namespace QuickPay
     public partial class Metadata
     {
         [JsonProperty("fraud_remarks")]
-        public object[] FraudRemarks { get; set; }
+        public object[] FraudComments { get; set; }
 
         [JsonProperty("customer_country")]
         public string CustomerCountry { get; set; }
