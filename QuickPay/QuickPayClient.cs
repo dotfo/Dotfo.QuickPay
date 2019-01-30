@@ -54,14 +54,12 @@ namespace QuickPay
 
     public class QuickPayClient
     {
-
-        private readonly QuickPaySettings _quickPaySettings;
         private readonly ILogger _logger;
         private readonly IMemoryCache _cache;
 
-        public QuickPayClient(IOptions<QuickPaySettings> quickPaySettings, ILogger<QuickPayClient> logger, IMemoryCache memoryCache)
+        public QuickPayClient(QuickPaySettings quickPaySettings, ILogger<QuickPayClient> logger, IMemoryCache memoryCache)
         {
-            _quickPaySettings = quickPaySettings.Value;
+            Settings = quickPaySettings;
             _logger = logger;
             _cache = memoryCache;
         }
@@ -119,7 +117,7 @@ namespace QuickPay
 
 
 
-        public QuickPaySettings Settings => _quickPaySettings;
+        public QuickPaySettings Settings { get; }
 
         private async Task<TK> Get<T, TK>(string url)
         {
@@ -128,15 +126,15 @@ namespace QuickPay
 
         private async Task<TK> Get<T, TK>(QuickPayPayload model, string url)
         {
-            var authValue = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($":{_quickPaySettings.ApiKey}")));
+            var authValue = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($":{Settings.ApiKey}")));
             HttpClient client = new HttpClient()
             {
                 DefaultRequestHeaders = { Authorization = authValue }
             };
-            client.DefaultRequestHeaders.Add("Accept-Version", model.Headers.ContainsKey("Accept-Version") ? model.Headers["Accept-Version"] : _quickPaySettings.Version);
-            client.DefaultRequestHeaders.Add("QuickPay-Callback-Url", model.Headers.ContainsKey("QuickPay-Callback-Url") ? model.Headers["QuickPay-Callback-Url"] : _quickPaySettings.CallbackUrl);
+            client.DefaultRequestHeaders.Add("Accept-Version", model.Headers.ContainsKey("Accept-Version") ? model.Headers["Accept-Version"] : Settings.Version);
+            client.DefaultRequestHeaders.Add("QuickPay-Callback-Url", model.Headers.ContainsKey("QuickPay-Callback-Url") ? model.Headers["QuickPay-Callback-Url"] : Settings.CallbackUrl);
 
-            var response = await client.GetAsync(_quickPaySettings.EndPoint + url);
+            var response = await client.GetAsync(Settings.EndPoint + url);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -150,17 +148,17 @@ namespace QuickPay
 
         private async Task<TK> Post<T, TK>(QuickPayPayload model, string url)
         {
-            var authValue = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($":{_quickPaySettings.ApiKey}")));
+            var authValue = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($":{Settings.ApiKey}")));
             HttpClient client = new HttpClient()
             {
                 DefaultRequestHeaders = { Authorization = authValue }
             };
-            client.DefaultRequestHeaders.Add("Accept-Version", model.Headers.ContainsKey("Accept-Version") ? model.Headers["Accept-Version"] : _quickPaySettings.Version);
-            client.DefaultRequestHeaders.Add("QuickPay-Callback-Url", model.Headers.ContainsKey("QuickPay-Callback-Url") ? model.Headers["QuickPay-Callback-Url"] : _quickPaySettings.CallbackUrl);
+            client.DefaultRequestHeaders.Add("Accept-Version", model.Headers.ContainsKey("Accept-Version") ? model.Headers["Accept-Version"] : Settings.Version);
+            client.DefaultRequestHeaders.Add("QuickPay-Callback-Url", model.Headers.ContainsKey("QuickPay-Callback-Url") ? model.Headers["QuickPay-Callback-Url"] : Settings.CallbackUrl);
 
             var data = JsonConvert.SerializeObject(model);
 
-            var response = await client.PostAsync(_quickPaySettings.EndPoint + url,
+            var response = await client.PostAsync(Settings.EndPoint + url,
                 new StringContent(data, Encoding.UTF8, "application/json"));
 
             var responseValue = await response.Content.ReadAsStringAsync();
@@ -176,15 +174,15 @@ namespace QuickPay
 
         private async Task<TK> Put<T, TK>(QuickPayPayload model, string url)
         {
-            var authValue = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($":{_quickPaySettings.ApiKey}")));
+            var authValue = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($":{Settings.ApiKey}")));
             HttpClient client = new HttpClient()
             {
                 DefaultRequestHeaders = { Authorization = authValue }
             };
-            client.DefaultRequestHeaders.Add("Accept-Version", model.Headers.ContainsKey("Accept-Version") ? model.Headers["Accept-Version"] : _quickPaySettings.Version);
-            client.DefaultRequestHeaders.Add("QuickPay-Callback-Url", model.Headers.ContainsKey("QuickPay-Callback-Url") ? model.Headers["QuickPay-Callback-Url"] : _quickPaySettings.CallbackUrl);
+            client.DefaultRequestHeaders.Add("Accept-Version", model.Headers.ContainsKey("Accept-Version") ? model.Headers["Accept-Version"] : Settings.Version);
+            client.DefaultRequestHeaders.Add("QuickPay-Callback-Url", model.Headers.ContainsKey("QuickPay-Callback-Url") ? model.Headers["QuickPay-Callback-Url"] : Settings.CallbackUrl);
 
-            var response = await client.PutAsync(_quickPaySettings.EndPoint + url,
+            var response = await client.PutAsync(Settings.EndPoint + url,
                 new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json"));
 
             if (!response.IsSuccessStatusCode)
@@ -280,7 +278,7 @@ namespace QuickPay
         [JsonProperty("framed")]
         public bool Framed { get; set; }
         [JsonProperty("language")]
-        public string Language { get; set; } = "fo";
+        public string Language { get; set; } = "en";
 
     }
 
