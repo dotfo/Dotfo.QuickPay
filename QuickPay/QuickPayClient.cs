@@ -55,14 +55,25 @@ namespace QuickPay
     public class QuickPayClient
     {
         private readonly ILogger _logger;
-        private readonly IMemoryCache _cache;
 
-        public QuickPayClient(QuickPaySettings quickPaySettings, ILogger<QuickPayClient> logger, IMemoryCache memoryCache)
+        public QuickPayClient(QuickPaySettings quickPaySettings)
+        {
+            new QuickPayClient(quickPaySettings, null);
+        }
+
+        public QuickPayClient(QuickPaySettings quickPaySettings, ILogger<QuickPayClient> logger)
         {
             Settings = quickPaySettings;
             _logger = logger;
-            _cache = memoryCache;
         }
+
+        private void LogInformation(string message)
+        {
+            if (_logger != null)
+            {
+                _logger.LogInformation(message);
+            }
+        } 
 
         public async Task<QuickPayCallback> CreatePayment(QuickPayCreatePayment model)
         {
@@ -142,7 +153,7 @@ namespace QuickPay
             }
             var responseValue = await response.Content.ReadAsStringAsync();
 
-            _logger.LogInformation(responseValue);
+            LogInformation(responseValue);
             return JsonConvert.DeserializeObject<TK>(responseValue);
         }
 
@@ -168,7 +179,7 @@ namespace QuickPay
                 throw new QuickPayException(response.ReasonPhrase, response.StatusCode, await response.Content.ReadAsStringAsync());
             }
 
-            _logger.LogInformation(responseValue);
+            LogInformation(responseValue);
             return JsonConvert.DeserializeObject<TK>(responseValue);
         }
 
@@ -191,7 +202,7 @@ namespace QuickPay
             }
             var responseValue = await response.Content.ReadAsStringAsync();
 
-            _logger.LogInformation(responseValue);
+            LogInformation(responseValue);
             return JsonConvert.DeserializeObject<TK>(responseValue);
         }
 
