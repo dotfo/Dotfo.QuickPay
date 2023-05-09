@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
-namespace QuickPay
+namespace Dotfo.QuickPay
 {
     public static class QuickPayHelpers
     {
@@ -56,9 +56,16 @@ namespace QuickPay
     {
         private readonly ILogger _logger;
 
+        public QuickPayClient(QuickPaySettings quickPaySettings, ILogger<QuickPayClient> logger, IMemoryCache memoryCache)
+        {
+            Settings = quickPaySettings;
+            _logger = logger;
+            _cache = memoryCache;
+        }
+
         public QuickPayClient(QuickPaySettings quickPaySettings)
         {
-            new QuickPayClient(quickPaySettings, null);
+            Settings = quickPaySettings;
         }
 
         public QuickPayClient(QuickPaySettings quickPaySettings, ILogger<QuickPayClient> logger)
@@ -73,7 +80,17 @@ namespace QuickPay
             {
                 _logger.LogInformation(message);
             }
-        } 
+        }
+
+        private void LogInformation(object obj)
+        {
+            var message = JsonConvert.SerializeObject(obj);
+
+            if (_logger != null)
+            {
+                _logger.LogInformation(message);
+            }
+        }
 
         public async Task<QuickPayCallback> CreatePayment(QuickPayCreatePayment model)
         {
@@ -149,6 +166,7 @@ namespace QuickPay
 
             if (!response.IsSuccessStatusCode)
             {
+                LogInformation(response);
                 throw new QuickPayException(response.ReasonPhrase, response.StatusCode, await response.Content.ReadAsStringAsync());
             }
             var responseValue = await response.Content.ReadAsStringAsync();
@@ -176,6 +194,7 @@ namespace QuickPay
 
             if (!response.IsSuccessStatusCode)
             {
+                LogInformation(response);
                 throw new QuickPayException(response.ReasonPhrase, response.StatusCode, await response.Content.ReadAsStringAsync());
             }
 
@@ -198,6 +217,7 @@ namespace QuickPay
 
             if (!response.IsSuccessStatusCode)
             {
+                LogInformation(response);
                 throw new QuickPayException(response.ReasonPhrase, response.StatusCode, await response.Content.ReadAsStringAsync());
             }
             var responseValue = await response.Content.ReadAsStringAsync();
